@@ -181,7 +181,7 @@ class AnalyticsService:
                     error_code="AI_LIMIT_EXCEEDED"
                 )
             
-            # Generate AI insights
+            # Generate AI insights (provider selection is now automatic)
             ai_insights = await self.llm_service.generate_insights(
                 resume_content, jd_content, user_id
             )

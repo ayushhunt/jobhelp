@@ -1,97 +1,78 @@
 """
-Main FastAPI application
+JobHelp AI API - Application Factory
+Creates and configures the FastAPI application with all middleware and routes
 """
-import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.middleware.gzip import GZipMiddleware
 from contextlib import asynccontextmanager
+import logging
 
 from app.config.settings import settings
 from app.core.logging.logger import setup_logging
 from app.api.v1.api import api_router
-from app.core.exceptions.exceptions import JobHelpException, create_http_exception
-
-# Setup logging
-setup_logging()
-
-logger = logging.getLogger(__name__)
+from app.core.exceptions.handlers import setup_exception_handlers
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan events"""
+    """Application lifespan manager"""
     # Startup
-    logger.info("Starting JobHelp AI API...")
+    setup_logging()
+    logger = logging.getLogger(__name__)
+    logger.info("🚀 Starting JobHelp AI API...")
     logger.info(f"Environment: {'Development' if settings.DEBUG else 'Production'}")
     logger.info(f"Log level: {settings.LOG_LEVEL}")
     
     yield
     
     # Shutdown
-    logger.info("Shutting down JobHelp AI API...")
+    logger.info("🛑 Shutting down JobHelp AI API...")
 
 def create_app() -> FastAPI:
-    """Create and configure FastAPI application"""
+    """Create and configure the FastAPI application"""
     
+    # Create FastAPI instance
     app = FastAPI(
         title=settings.PROJECT_NAME,
-        description=settings.DESCRIPTION,
+        description="AI-powered resume and job description analysis API",
         version=settings.VERSION,
-        docs_url="/docs" if settings.DEBUG else None,
-        redoc_url="/redoc" if settings.DEBUG else None,
-        openapi_url="/openapi.json" if settings.DEBUG else None,
+        docs_url="/docs",
+        redoc_url="/redoc",
         lifespan=lifespan
     )
     
-    # Add CORS middleware
+    # Add middleware
+    _add_middleware(app)
+    
+    # Setup exception handlers
+    setup_exception_handlers(app)
+    
+    # Include API routes
+    app.include_router(api_router, prefix=settings.API_V1_STR)
+    
+    # Add health check endpoint
+    _add_health_check(app)
+    
+    return app
+
+def _add_middleware(app: FastAPI) -> None:
+    """Add middleware to the application"""
+    
+    # CORS middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.BACKEND_CORS_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
-        expose_headers=["*"]
     )
     
-    # Add trusted host middleware for production
-    if not settings.DEBUG:
-        app.add_middleware(
-            TrustedHostMiddleware,
-            allowed_hosts=["*"]  # Configure based on your deployment
-        )
+    # Gzip compression middleware
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+def _add_health_check(app: FastAPI) -> None:
+    """Add health check endpoint"""
     
-    # Global exception handler
-    @app.exception_handler(JobHelpException)
-    async def jobhelp_exception_handler(request: Request, exc: JobHelpException):
-        """Handle custom JobHelp exceptions"""
-        logger.error(f"JobHelp exception: {exc.message}", extra={
-            "error_code": exc.error_code,
-            "details": exc.details,
-            "path": request.url.path
-        })
-        return create_http_exception(exc)
-    
-    @app.exception_handler(Exception)
-    async def general_exception_handler(request: Request, exc: Exception):
-        """Handle general exceptions"""
-        logger.error(f"Unhandled exception: {str(exc)}", extra={
-            "path": request.url.path,
-            "exception_type": type(exc).__name__
-        })
-        return JSONResponse(
-            status_code=500,
-            content={
-                "message": "Internal server error",
-                "error_code": "INTERNAL_ERROR",
-                "details": {"exception": str(exc)} if settings.DEBUG else {}
-            }
-        )
-    
-    # Include API router
-    app.include_router(api_router, prefix=settings.API_V1_STR)
-    
-    # Health check endpoint
     @app.get("/health")
     async def health_check():
         """Health check endpoint"""
@@ -99,33 +80,8 @@ def create_app() -> FastAPI:
             "status": "healthy",
             "service": settings.PROJECT_NAME,
             "version": settings.VERSION,
-            "timestamp": "2024-01-01T00:00:00Z"  # Replace with actual timestamp
+            "timestamp": "2024-01-01T00:00:00Z"
         }
-    
-    # Root endpoint
-    @app.get("/")
-    async def root():
-        """Root endpoint"""
-        return {
-            "message": f"{settings.PROJECT_NAME} is running",
-            "version": settings.VERSION,
-            "docs": "/docs" if settings.DEBUG else "Documentation disabled in production",
-            "health": "/health"
-        }
-    
-    logger.info("FastAPI application created successfully")
-    return app
 
-# Create application instance
+# Create the app instance for uvicorn to import
 app = create_app()
-
-if __name__ == "__main__":
-    import uvicorn
-    
-    uvicorn.run(
-        "app.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        log_level=settings.LOG_LEVEL.lower()
-    )

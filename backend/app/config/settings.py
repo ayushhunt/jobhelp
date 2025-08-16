@@ -33,6 +33,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
+    GEMINI_API_KEY: Optional[str] = None
+    
+    # LLM Provider Selection
+    DEFAULT_LLM_PROVIDER: str = "gemini"  # gemini, openai, anthropic, groq
+    FALLBACK_LLM_PROVIDER: str = "openai"
     
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60

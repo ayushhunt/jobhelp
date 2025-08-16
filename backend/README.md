@@ -1,260 +1,273 @@
 # JobHelp AI API - Backend
 
-A production-ready, modular FastAPI backend for AI-powered resume and job description analysis.
+A modern, modular FastAPI application for AI-powered resume and job description analysis.
+
+## 🏗️ Project Structure
+
+```
+backend/
+├── app/                           # Main application package
+│   ├── api/                      # API layer
+│   │   └── v1/                  # API version 1
+│   │       ├── api.py           # Main API router
+│   │       └── endpoints/       # API endpoints
+│   │           ├── analysis.py  # Document analysis endpoints
+│   │           └── llm.py       # LLM provider management
+│   ├── core/                     # Core functionality
+│   │   ├── config/              # Configuration management
+│   │   ├── exceptions/          # Custom exceptions and handlers
+│   │   └── logging/             # Logging configuration
+│   ├── models/                   # Data models and schemas
+│   │   └── schemas/             # Pydantic schemas
+│   ├── services/                 # Business logic services
+│   │   ├── analytics/           # Document analysis orchestration
+│   │   ├── llm/                 # LLM integration
+│   │   │   ├── providers/       # LLM provider implementations
+│   │   │   ├── llm_service.py  # Business logic layer
+│   │   │   ├── llm_orchestrator.py # Provider management
+│   │   │   └── provider_factory.py # Provider factory
+│   │   └── parsing/             # Experience parsing
+│   └── utils/                    # Utility functions
+│       ├── file_handling/       # Document processing
+│       └── text_processing/     # Text analysis utilities
+├── logs/                         # Application logs
+├── main.py                       # Main entry point
+├── start.py                      # Simple production startup
+├── requirements.txt              # Python dependencies
+├── env.example                   # Environment variables template
+└── README.md                     # This file
+```
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.9+
+- pip package manager
+
+### Installation
+```bash
+# Clone and navigate to backend directory
+cd backend
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Environment Setup
+```bash
+# Copy environment template
+cp env.example .env
+
+# Edit .env with your API keys
+nano .env
+```
+
+### Production Startup
+```bash
+# Simple production start (recommended)
+python3 start.py
+
+# Or use main entry point
+python3 main.py
+
+# Or use uvicorn directly
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+## 🔧 Configuration
+
+### Environment Variables (.env)
+```env
+# API Configuration
+API_V1_STR=/api/v1
+PROJECT_NAME=JobHelp AI API
+VERSION=3.0.0
+
+# Server Configuration
+HOST=0.0.0.0
+PORT=8000
+DEBUG=false
+
+# CORS Configuration
+BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://127.0.0.1:3000"]
+
+# LLM Configuration
+GROQ_API_KEY=your_groq_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Logging
+LOG_LEVEL=INFO
+LOG_FILE=logs/app.log
+
+# AI Usage Limits
+FREE_TIER_DAILY_LIMIT=10
+PREMIUM_TIER_DAILY_LIMIT=100
+```
+
+## 📡 API Endpoints
+
+### Base URL: `/api/v1`
+
+#### Document Analysis
+- **POST** `/analysis/analyze` - Analyze resume and job description
+- **GET** `/analysis/ai-usage` - Get AI usage statistics
+
+#### LLM Management
+- **GET** `/llm/status` - Get LLM service status
+- **GET** `/llm/providers` - List available LLM providers
+- **POST** `/llm/switch-provider` - Switch LLM provider
+- **GET** `/llm/current-provider` - Get current provider info
+- **POST** `/llm/test-provider` - Test specific provider
+
+#### Health Check
+- **GET** `/health` - Service health status
+
+## 🤖 LLM Providers
+
+### Supported Providers
+1. **Groq** (Recommended) - Ultra-fast inference
+2. **Gemini** - Google's AI models
+3. **OpenAI** - GPT models
+4. **Mock** - Testing/development only
+
+### Provider Selection
+```python
+from app.services.llm.llm_service import LLMService
+
+# Initialize service
+llm_service = LLMService()
+
+# Switch providers
+llm_service.switch_provider('groq')      # Switch to Groq
+llm_service.switch_provider('gemini')    # Switch to Gemini
+llm_service.switch_provider('openai')    # Switch to OpenAI
+
+# Auto-selection (happens automatically when needed)
+# Prefers: Groq → Gemini → OpenAI → Mock
+```
 
 ## 🏗️ Architecture
 
-The backend follows a clean, modular architecture with clear separation of concerns:
+### Design Principles
+- **Single Responsibility**: Each module has one clear purpose
+- **Dependency Inversion**: High-level modules don't depend on low-level details
+- **Interface Segregation**: Clean, focused interfaces
+- **Separation of Concerns**: Business logic, data access, and presentation are separate
 
+### Service Layer
+- **Analytics Service**: Orchestrates document analysis workflow
+- **LLM Service**: Business logic for AI insights generation
+- **LLM Orchestrator**: Manages provider selection and switching
+- **Provider Factory**: Creates and manages LLM provider instances
+
+### Data Flow
 ```
-app/
-├── api/                    # API layer
-│   └── v1/               # API version 1
-│       ├── endpoints/    # Route handlers
-│       └── api.py        # Main API router
-├── core/                  # Core functionality
-│   ├── logging/          # Logging configuration
-│   └── exceptions/       # Custom exception classes
-├── services/              # Business logic services
-│   ├── analytics/        # Analytics orchestration
-│   ├── llm/              # LLM service management
-│   └── parsing/          # Document parsing services
-├── utils/                 # Utility functions
-│   ├── text_processing/  # Text analysis utilities
-│   └── file_handling/    # File processing utilities
-├── models/                # Data models
-│   └── schemas/          # Pydantic schemas
-├── config/                # Configuration management
-└── main.py               # Application entry point
+Client Request → API Endpoint → Service Layer → LLM Orchestrator → Provider → Response
+                ↓
+            Validation → Business Logic → Data Processing → Response Formatting
 ```
 
-## 🚀 Features
+## 🧪 Development
 
-- **Modular Design**: Clean separation of concerns with dedicated services
-- **Production Logging**: Structured logging with file rotation and configurable levels
-- **Error Handling**: Custom exception classes with proper HTTP status codes
-- **File Processing**: Support for PDF, DOCX, and TXT files
-- **Text Analysis**: Advanced NLP-based text processing and similarity analysis
-- **AI Integration**: Modular LLM service with usage tracking and rate limiting
-- **Experience Parsing**: Intelligent work experience extraction and analysis
-- **API Documentation**: Auto-generated OpenAPI documentation
-- **Health Checks**: Built-in health monitoring endpoints
-- **CORS Support**: Configurable cross-origin resource sharing
-- **Environment Configuration**: Centralized settings management
+### Adding New Features
+1. **New API Endpoint**: Add to `app/api/v1/endpoints/`
+2. **New Service**: Add to `app/services/`
+3. **New Provider**: Add to `app/services/llm/providers/`
+4. **New Schema**: Add to `app/models/schemas/`
+5. **New Utility**: Add to `app/utils/`
 
-## 📋 Requirements
+### Code Quality
+- **Type Safety**: Full TypeScript-like type checking with Pydantic
+- **Error Handling**: Centralized exception handling with proper HTTP status codes
+- **Logging**: Comprehensive logging with rotation and formatting
+- **Testing**: Modular design enables easy unit testing
 
-- Python 3.8+
-- FastAPI
-- Uvicorn
-- NLTK
-- PyPDF2
-- python-docx
-- dateparser
-- pydantic-settings
+## 🚀 Production Deployment
 
-## 🛠️ Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd jobhelp/backend
-   ```
-
-2. **Create virtual environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-5. **Download NLTK data**
-   ```bash
-   python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('wordnet'); nltk.download('averaged_perceptron_tagger')"
-   ```
-
-## 🚀 Running the Application
-
-### Development Mode
+### Docker (Recommended)
 ```bash
-python run.py
-```
-
-### Production Mode
-```bash
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
-```
-
-### Using Docker
-```bash
+# Build and run with Docker
 docker build -t jobhelp-api .
 docker run -p 8000:8000 jobhelp-api
 ```
 
-## 📚 API Endpoints
-
-### Analysis Endpoints
-- `POST /api/v1/analysis/analyze` - Analyze resume and job description
-- `GET /api/v1/analysis/ai-usage` - Get AI usage statistics
-- `GET /api/v1/analysis/ai-models` - Get available AI models
-- `GET /api/v1/analysis/ai-costs` - Get cost comparison
-
-### System Endpoints
-- `GET /` - Root endpoint
-- `GET /health` - Health check
-- `GET /docs` - API documentation (development only)
-
-## ⚙️ Configuration
-
-Configuration is managed through environment variables and the `app/config/settings.py` file:
-
-```python
-# API Configuration
-API_V1_STR = "/api/v1"
-PROJECT_NAME = "JobHelp AI API"
-VERSION = "3.0.0"
-
-# Server Configuration
-HOST = "0.0.0.0"
-PORT = 8000
-DEBUG = False
-
-# CORS Configuration
-BACKEND_CORS_ORIGINS = ["http://localhost:3000"]
-
-# LLM Configuration
-OPENAI_API_KEY = None
-ANTHROPIC_API_KEY = None
-GROQ_API_KEY = None
-
-# Rate Limiting
-RATE_LIMIT_PER_MINUTE = 60
-
-# File Upload
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-ALLOWED_FILE_TYPES = [".pdf", ".docx", ".txt"]
-
-# Logging
-LOG_LEVEL = "INFO"
-LOG_FILE = "logs/app.log"
-
-# AI Usage Limits
-FREE_TIER_DAILY_LIMIT = 10
-PREMIUM_TIER_DAILY_LIMIT = 100
-```
-
-## 🔧 Development
-
-### Project Structure
-- **Services**: Business logic and external integrations
-- **Utils**: Reusable utility functions
-- **Models**: Data structures and validation schemas
-- **API**: HTTP endpoint definitions and routing
-- **Core**: Application configuration and shared functionality
-
-### Adding New Features
-1. Create new service in `app/services/`
-2. Add Pydantic schemas in `app/models/schemas/`
-3. Create API endpoints in `app/api/v1/endpoints/`
-4. Update the main API router in `app/api/v1/api.py`
-
-### Testing
+### Systemd Service
 ```bash
-# Run tests
-pytest
+# Create service file
+sudo nano /etc/systemd/system/jobhelp-api.service
 
-# Run with coverage
-pytest --cov=app
-
-# Run specific test file
-pytest tests/test_analytics.py
+# Enable and start service
+sudo systemctl enable jobhelp-api
+sudo systemctl start jobhelp-api
 ```
-
-## 📊 Logging
-
-The application uses structured logging with configurable levels:
-
-- **Console**: INFO level and above
-- **File**: DEBUG level and above (with rotation)
-- **Format**: Timestamp, logger name, level, message
-- **Rotation**: 10MB files with 5 backups
-
-## 🚨 Error Handling
-
-Custom exception classes provide consistent error handling:
-
-- `JobHelpException`: Base exception class
-- `FileProcessingError`: File processing failures
-- `TextExtractionError`: Text extraction failures
-- `LLMServiceError`: LLM service failures
-- `AnalyticsError`: Analytics processing failures
-- `ValidationError`: Input validation failures
-- `RateLimitExceeded`: Rate limit violations
-- `InsufficientCredits`: AI usage limit exceeded
-
-## 🔒 Security
-
-- **CORS**: Configurable cross-origin policies
-- **File Validation**: File type and size restrictions
-- **Rate Limiting**: Configurable request limits
-- **Input Validation**: Pydantic schema validation
-- **Error Sanitization**: Production-safe error messages
-
-## 📈 Monitoring
-
-- **Health Checks**: `/health` endpoint for monitoring
-- **Structured Logging**: JSON-formatted logs for analysis
-- **Performance Metrics**: Request timing and processing metrics
-- **Error Tracking**: Comprehensive error logging and categorization
-
-## 🚀 Deployment
 
 ### Environment Variables
 ```bash
-# Required
-DEBUG=false
-LOG_LEVEL=INFO
-
-# Optional
-HOST=0.0.0.0
-PORT=8000
-LOG_FILE=logs/app.log
+# Set production environment variables
+export DEBUG=false
+export LOG_LEVEL=WARNING
+export GROQ_API_KEY=your_production_key
 ```
 
-### Production Considerations
-- Set `DEBUG=false`
-- Configure proper CORS origins
-- Set up log file paths
-- Configure trusted hosts
-- Set appropriate log levels
-- Enable health check monitoring
+## 📊 Monitoring & Logging
 
-## 🤝 Contributing
+### Log Files
+- **Application Logs**: `logs/app.log`
+- **Access Logs**: Enabled by default with uvicorn
+- **Error Logs**: Centralized error handling and logging
 
-1. Follow the existing code structure
-2. Add proper logging and error handling
-3. Include type hints and docstrings
-4. Update tests for new functionality
-5. Follow PEP 8 style guidelines
+### Health Checks
+```bash
+# Check service health
+curl http://localhost:8000/health
 
-## 📄 License
+# Check LLM service status
+curl http://localhost:8000/api/v1/llm/status
+```
 
-[Add your license information here]
+## 🔒 Security
 
-## 🆘 Support
+### CORS Configuration
+- Configurable origins via `BACKEND_CORS_ORIGINS`
+- Secure by default for production
 
-For issues and questions:
-- Check the logs for detailed error information
-- Review the API documentation at `/docs`
-- Check the health endpoint at `/health`
-- Review configuration in `app/config/settings.py`
+### Rate Limiting
+- Built-in rate limiting per endpoint
+- Configurable limits via settings
+
+### API Keys
+- Secure storage in environment variables
+- Never hardcoded in source code
+
+## 📝 Troubleshooting
+
+### Common Issues
+1. **Port Already in Use**: `lsof -ti:8000 | xargs kill -9`
+2. **Missing Dependencies**: `pip install -r requirements.txt`
+3. **API Key Issues**: Check `.env` file configuration
+4. **Provider Errors**: Verify API keys and provider availability
+
+### Debug Mode
+```bash
+# Enable debug mode
+export DEBUG=true
+export LOG_LEVEL=DEBUG
+
+# Start with debug logging
+python3 start.py
+```
+
+## 📚 Additional Resources
+
+- **FastAPI Documentation**: https://fastapi.tiangolo.com/
+- **Pydantic Documentation**: https://pydantic-docs.helpmanual.io/
+- **Uvicorn Documentation**: https://www.uvicorn.org/
+
+---
+
+**Built with ❤️ using modern Python web technologies and best practices**
