@@ -287,7 +287,7 @@ The application follows a clean, modular architecture:
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
 ## 🆘 Support
 

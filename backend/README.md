@@ -267,8 +267,8 @@ python3 start.py
 
 ## 📚 Additional Resources
 
-- **FastAPI Documentation**: https://fastapi.tiangolo.com/
-- **Pydantic Documentation**: https://pydantic-docs.helpmanual.io/
+- **FastAPI Documentation**: https://fastapi.tiangolo.com/    https://youtu.be/foGklduxhM0?si=2OWjEVCkNDMfYX07 
+- **Pydantic Documentation**: https://pydantic-docs.helpmanual.io/   
 - **Uvicorn Documentation**: https://www.uvicorn.org/
 
 ---
