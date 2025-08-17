@@ -53,11 +53,35 @@ class LLMProviderFactory:
             else:
                 logger.warning("OpenAI API key not found or not configured - provider not available")
             
+            # Initialize Parallel AI provider
+            if settings.PARALLEL_API_KEY and settings.PARALLEL_API_KEY != "your_parallel_api_key_here":
+                try:
+                    from .providers.parallel_provider import ParallelProvider
+                    self.providers['parallel'] = ParallelProvider(settings.PARALLEL_API_KEY)
+                    logger.info("Parallel AI provider initialized successfully")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Parallel AI provider: {str(e)}")
+            else:
+                logger.warning("Parallel AI API key not found or not configured - provider not available")
+            
             # Log available providers
             if self.providers:
                 logger.info(f"Available LLM providers: {list(self.providers.keys())}")
-                logger.info("Use switch_provider() method to select a specific provider")
-                logger.info("No provider will be automatically selected - manual selection required")
+                # Auto-select the first available provider (prefer groq for speed)
+                preferred_order = [ 'parallel','groq', 'gemini', 'openai', 'mock']
+                for provider_name in preferred_order:
+                    if provider_name in self.providers:
+                        self.current_provider = self.providers[provider_name]
+                        logger.info(f"Auto-selected {provider_name} provider as default")
+                        break
+                
+                if not self.current_provider:
+                    # Fallback to first available provider
+                    first_provider = list(self.providers.keys())[0]
+                    self.current_provider = self.providers[first_provider]
+                    logger.info(f"Auto-selected {first_provider} provider as fallback")
+                
+                logger.info(f"Current provider: {self.current_provider.provider_name}")
             else:
                 # No real providers available, use mock provider for testing
                 try:
@@ -72,7 +96,9 @@ class LLMProviderFactory:
                     logger.info("- GROQ_API_KEY for Groq (recommended for speed)")
                     logger.info("- GEMINI_API_KEY for Google Gemini")
                     logger.info("- OPENAI_API_KEY for OpenAI GPT models")
+                    logger.info("- PARALLEL_API_KEY for Parallel AI (ultra-fast web research)")
                     logger.info("- ANTHROPIC_API_KEY for Anthropic Claude")
+                    logger.info("Note: Provider will be auto-selected based on availability and preference")
                 
         except Exception as e:
             logger.error(f"Failed to initialize LLM providers: {str(e)}")
@@ -152,7 +178,7 @@ class LLMProviderFactory:
             "available_providers": provider_info,
             "current_provider": self.current_provider.provider_name if self.current_provider else None,
             "total_providers": len(self.providers),
-            "note": "Use switch_provider() method to select a provider"
+            "note": "Provider auto-selected. Use switch_provider() method to change provider."
         }
     
     async def test_provider(self, provider_name: str) -> Dict[str, Any]:

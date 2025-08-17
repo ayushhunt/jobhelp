@@ -71,8 +71,8 @@ class LLMOrchestrator:
                 logger.warning("No providers available for auto-selection")
                 return False
             
-            # Prefer Groq for speed, then fall back to others
-            preferred_order = ['groq', 'gemini', 'openai', 'mock']
+            # Prefer Groq for speed, then Parallel AI for web research, then fall back to others
+            preferred_order = ['groq', 'parallel', 'gemini', 'openai', 'mock']
             
             for provider_name in preferred_order:
                 if provider_name in available_names:

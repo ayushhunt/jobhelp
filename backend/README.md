@@ -99,6 +99,7 @@ BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://127.0.0.1:3000"]
 GROQ_API_KEY=your_groq_api_key_here
 GEMINI_API_KEY=your_gemini_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
+PARALLEL_API_KEY=your_parallel_api_key_here
 
 # Logging
 LOG_LEVEL=INFO
@@ -131,9 +132,10 @@ PREMIUM_TIER_DAILY_LIMIT=100
 
 ### Supported Providers
 1. **Groq** (Recommended) - Ultra-fast inference
-2. **Gemini** - Google's AI models
-3. **OpenAI** - GPT models
-4. **Mock** - Testing/development only
+2. **Parallel AI** - Ultra-fast web research with low latency
+3. **Gemini** - Google's AI models
+4. **OpenAI** - GPT models
+5. **Mock** - Testing/development only
 
 ### Provider Selection
 ```python
@@ -144,11 +146,12 @@ llm_service = LLMService()
 
 # Switch providers
 llm_service.switch_provider('groq')      # Switch to Groq
+llm_service.switch_provider('parallel')  # Switch to Parallel AI
 llm_service.switch_provider('gemini')    # Switch to Gemini
 llm_service.switch_provider('openai')    # Switch to OpenAI
 
 # Auto-selection (happens automatically when needed)
-# Prefers: Groq → Gemini → OpenAI → Mock
+# Prefers: Groq → Parallel AI → Gemini → OpenAI → Mock
 ```
 
 ## 🏗️ Architecture

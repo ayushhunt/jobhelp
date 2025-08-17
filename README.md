@@ -137,6 +137,7 @@ CORS_ORIGINS=["http://localhost:3000"]
 # AI Service Configuration
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+PARALLEL_API_KEY=your_parallel_api_key_here
 
 # File Upload Limits
 MAX_FILE_SIZE=10485760  # 10MB

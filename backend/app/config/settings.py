@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+    PARALLEL_API_KEY: Optional[str] = None
     
     # LLM Provider Selection
     DEFAULT_LLM_PROVIDER: str = "gemini"  # gemini, openai, anthropic, groq
