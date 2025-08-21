@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
     PARALLEL_API_KEY: Optional[str] = None
     
+    # Google Services Configuration
+    GOOGLE_KNOWLEDGE_GRAPH_API_KEY: Optional[str] = None
+    GOOGLE_SEARCH_API_KEY: Optional[str] = None
+    GOOGLE_SEARCH_ENGINE_ID: Optional[str] = None
+    
     # LLM Provider Selection
     DEFAULT_LLM_PROVIDER: str = "gemini"  # gemini, openai, anthropic, groq
     FALLBACK_LLM_PROVIDER: str = "openai"
@@ -62,6 +67,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+        extra = "allow"  # Allow extra fields from environment variables
 
 # Global settings instance
 settings = Settings()

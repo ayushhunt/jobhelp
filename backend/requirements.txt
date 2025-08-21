@@ -20,6 +20,9 @@ nltk==3.8.1
 textstat==0.7.3
 dateparser==1.2.0
 
+# WHOIS and Domain Information
+python-whois==0.9.5
+
 # LLM Providers
 google-generativeai==0.3.2  # Gemini
 openai>=1.4.0               # OpenAI GPT (updated for compatibility)
