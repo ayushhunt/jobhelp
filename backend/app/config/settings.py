@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     GOOGLE_KNOWLEDGE_GRAPH_API_KEY: Optional[str] = None
     GOOGLE_SEARCH_API_KEY: Optional[str] = None
     GOOGLE_SEARCH_ENGINE_ID: Optional[str] = None
+    GOOGLE_PLACES_API_KEY: Optional[str] = None
     
     # LLM Provider Selection
     DEFAULT_LLM_PROVIDER: str = "gemini"  # gemini, openai, anthropic, groq

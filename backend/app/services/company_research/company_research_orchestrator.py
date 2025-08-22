@@ -17,6 +17,7 @@ from .research_sources.whois_service import WHOISService
 from .research_sources.web_search_service import WebSearchService
 from .research_sources.knowledge_graph_service import KnowledgeGraphService
 from .research_sources.ai_analysis_service import AIAnalysisService
+from .research_sources.location_verification_service import LocationVerificationService
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +30,15 @@ class CompanyResearchOrchestrator:
             ResearchSource.WHOIS: WHOISService(),
             ResearchSource.WEB_SEARCH: WebSearchService(),
             ResearchSource.KNOWLEDGE_GRAPH: KnowledgeGraphService(),
-            ResearchSource.AI_ANALYSIS: AIAnalysisService()
+            ResearchSource.AI_ANALYSIS: AIAnalysisService(),
+            ResearchSource.LOCATION_VERIFICATION: LocationVerificationService()
         }
         
         # Research pipeline configuration
         self.pipeline_config = {
-            "basic": [ResearchSource.WEB_SEARCH],
-            "standard": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH],
-            "comprehensive": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.AI_ANALYSIS]
+            "basic": [ResearchSource.LOCATION_VERIFICATION],
+            "standard": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.LOCATION_VERIFICATION],
+            "comprehensive": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.LOCATION_VERIFICATION, ResearchSource.AI_ANALYSIS]
         }
         
         # Active research sessions
@@ -74,7 +76,7 @@ class CompanyResearchOrchestrator:
                 research_data.update(ai_analysis)
             
             # Build final response
-            response = self._build_research_response(request, research_data, task_results, start_time)
+            response = self._build_research_response(request, research_data, task_results, start_time, request_id)
             
             # Update progress
             progress.overall_progress = 100.0
@@ -90,7 +92,7 @@ class CompanyResearchOrchestrator:
             progress.overall_progress = 0.0
             
             # Return partial response if possible
-            return self._build_error_response(request, str(e), start_time)
+            return self._build_error_response(request, str(e), start_time, request_id)
         
         finally:
             # Clean up active session after some time
@@ -215,13 +217,15 @@ class CompanyResearchOrchestrator:
         request: CompanyResearchRequest, 
         research_data: Dict[str, Any],
         task_results: List[ResearchTaskResult],
-        start_time: float
+        start_time: float,
+        request_id: str
     ) -> CompanyResearchResponse:
         """Build the final research response"""
         # Extract data by source
         whois_data = research_data.get("whois", {})
         web_search_results = research_data.get("web_search", {}).get("search_results", [])
         knowledge_graph_data = research_data.get("knowledge_graph", {})
+        location_verification_data = research_data.get("location_verification", {})
         
         # Extract AI analysis results
         ai_results = research_data.get("ai_analysis", {})
@@ -232,11 +236,13 @@ class CompanyResearchOrchestrator:
         
         # Build response
         response = CompanyResearchResponse(
+            request_id=request_id,
             company_name=request.company_name or request.company_domain or "Unknown Company",
             company_domain=request.company_domain,
             whois_data=whois_data if whois_data else None,
             web_search_results=web_search_results if web_search_results else None,
             knowledge_graph_data=knowledge_graph_data if knowledge_graph_data else None,
+            location_verification_data=location_verification_data if location_verification_data else None,
             company_authenticity=ai_results.get("company_authenticity"),
             company_growth=ai_results.get("company_growth"),
             employee_insights=ai_results.get("employee_insights"),
@@ -250,6 +256,7 @@ class CompanyResearchOrchestrator:
             total_cost=self._calculate_total_cost(task_results),
             sources_used=[result.source for result in task_results if result.status == ResearchStatus.COMPLETED],
             failed_sources=[result.source for result in task_results if result.status == ResearchStatus.FAILED],
+            authenticity_score=self._calculate_authenticity_score(research_data, task_results),
             task_results=task_results
         )
         
@@ -259,10 +266,12 @@ class CompanyResearchOrchestrator:
         self, 
         request: CompanyResearchRequest, 
         error_message: str,
-        start_time: float
+        start_time: float,
+        request_id: str
     ) -> CompanyResearchResponse:
         """Build error response when research fails"""
         return CompanyResearchResponse(
+            request_id=request_id,
             company_name=request.company_name or request.company_domain or "Unknown Company",
             company_domain=request.company_domain,
             executive_summary=f"Research failed: {error_message}",
@@ -275,6 +284,7 @@ class CompanyResearchOrchestrator:
             total_cost=0.0,
             sources_used=[],
             failed_sources=[],
+            authenticity_score=0.0,
             task_results=[]
         )
     
@@ -285,6 +295,43 @@ class CompanyResearchOrchestrator:
             if result.cost_estimate:
                 total_cost += result.cost_estimate
         return total_cost
+    
+    def _calculate_authenticity_score(self, research_data: Dict[str, Any], task_results: List[ResearchTaskResult]) -> float:
+        """Calculate overall authenticity score based on research results"""
+        score = 50.0  # Base score
+        
+        # Boost score for successful research sources
+        successful_sources = [result for result in task_results if result.status == ResearchStatus.COMPLETED]
+        score += len(successful_sources) * 10.0
+        
+        # Boost score for location verification if available
+        if research_data.get("location_verification"):
+            location_data = research_data["location_verification"]
+            if location_data.get("authenticity_score"):
+                score += location_data["authenticity_score"] * 20.0
+        
+        # Boost score for WHOIS data if available
+        if research_data.get("whois"):
+            whois_data = research_data["whois"]
+            if whois_data.get("domain"):
+                score += 10.0
+            if whois_data.get("registrant_organization"):
+                score += 5.0
+        
+        # Boost score for knowledge graph data if available
+        if research_data.get("knowledge_graph"):
+            kg_data = research_data["knowledge_graph"]
+            if kg_data.get("description"):
+                score += 5.0
+            if kg_data.get("industry"):
+                score += 5.0
+        
+        # Penalize for failed sources
+        failed_sources = [result for result in task_results if result.status == ResearchStatus.FAILED]
+        score -= len(failed_sources) * 5.0
+        
+        # Ensure score is within 0-100 range
+        return max(0.0, min(100.0, score))
     
     async def get_research_progress(self, request_id: str) -> Optional[ResearchProgress]:
         """Get research progress for a specific request"""

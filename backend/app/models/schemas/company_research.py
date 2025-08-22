@@ -12,6 +12,7 @@ class ResearchSource(str, Enum):
     WEB_SEARCH = "web_search"
     KNOWLEDGE_GRAPH = "knowledge_graph"
     AI_ANALYSIS = "ai_analysis"
+    LOCATION_VERIFICATION = "location_verification"
 
 class ResearchStatus(str, Enum):
     """Research task status"""
@@ -114,6 +115,44 @@ class EmployeeInsights(BaseModel):
     overall_rating: Optional[float] = None
     review_count: Optional[int] = None
 
+class LocationData(BaseModel):
+    """Location information from a single source"""
+    source: str  # "google_places" or "nominatim_osm"
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    country: Optional[str] = None
+    postal_code: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    formatted_address: Optional[str] = None
+    place_id: Optional[str] = None
+    confidence_score: Optional[float] = None
+    last_updated: datetime = Field(default_factory=datetime.utcnow)
+
+class LocationComparison(BaseModel):
+    """Comparison results between location sources"""
+    address_similarity_score: float = Field(0.0, description="Address similarity score (0-1)")
+    coordinate_distance_km: Optional[float] = Field(None, description="Distance between coordinates in km")
+    city_match: bool = Field(False, description="Whether cities match")
+    state_match: bool = Field(False, description="Whether states match")
+    country_match: bool = Field(False, description="Whether countries match")
+    postal_code_match: bool = Field(False, description="Whether postal codes match")
+    overall_location_confidence: float = Field(0.0, description="Overall location confidence score (0-1)")
+
+class LocationVerificationData(BaseModel):
+    """Complete location verification data"""
+    company_name: str
+    search_query: str
+    google_places_data: Optional[LocationData] = None
+    nominatim_osm_data: Optional[LocationData] = None
+    comparison: Optional[LocationComparison] = None
+    authenticity_score: float = Field(0.0, description="Location authenticity score (0-1)")
+    verification_status: str = Field("unknown", description="verified, suspicious, unknown")
+    risk_factors: List[str] = []
+    trust_indicators: List[str] = []
+    last_verified: datetime = Field(default_factory=datetime.utcnow)
+
 class ResearchTaskResult(BaseModel):
     """Individual research task result"""
     source: ResearchSource
@@ -126,6 +165,9 @@ class ResearchTaskResult(BaseModel):
 
 class CompanyResearchResponse(BaseModel):
     """Complete company research response"""
+    # Request identification
+    request_id: str
+    
     # Company identification
     company_name: str
     company_domain: Optional[str] = None
@@ -134,6 +176,7 @@ class CompanyResearchResponse(BaseModel):
     whois_data: Optional[WHOISData] = None
     web_search_results: Optional[List[WebSearchResult]] = None
     knowledge_graph_data: Optional[KnowledgeGraphData] = None
+    location_verification_data: Optional[LocationVerificationData] = None
     
     # Synthesized insights
     company_authenticity: Optional[CompanyAuthenticity] = None
@@ -154,6 +197,9 @@ class CompanyResearchResponse(BaseModel):
     sources_used: List[ResearchSource]
     failed_sources: List[ResearchSource]
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+    
+    # Authenticity scoring
+    authenticity_score: float = Field(0.0, description="Overall company authenticity score (0-100)")
     
     # Task-level results
     task_results: List[ResearchTaskResult]
