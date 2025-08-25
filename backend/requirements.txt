@@ -1,30 +1,78 @@
-# Core Framework
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-
-# HTTP and Data Processing
-python-multipart==0.0.6
-aiohttp==3.9.1
-
-# Configuration and Environment
-python-dotenv==1.0.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-
-# Document Processing
-PyPDF2==3.0.1
-python-docx==1.1.0
-
-# NLP and Text Analysis
-nltk==3.8.1
-textstat==0.7.3
+annotated-types==0.7.0
+anyio==3.7.1
+beautifulsoup4==4.12.2
+breadability==0.1.20
+trafilatura
+cchardet
+certifi==2025.8.3
+chardet==5.2.0
+charset-normalizer==3.4.3
+click==8.2.1
 dateparser==1.2.0
-
-# WHOIS and Domain Information
-python-whois==0.9.5
-
-# LLM Providers
-google-generativeai==0.3.2  # Gemini
-openai>=1.4.0               # OpenAI GPT (updated for compatibility)
-httpx==0.27.2               # Pin httpx to fix OpenAI compatibility issue
-groq==0.31.0                # Groq (recommended)
+distro==1.9.0
+docopt==0.6.2
+fastapi==0.104.1
+filelock==3.19.1
+fsspec==2025.7.0
+groq==0.31.0
+h11==0.16.0
+hf-xet==1.1.8
+httpcore==1.0.9
+httpx==0.28.1
+huggingface-hub==0.34.4
+idna==3.10
+Jinja2==3.1.6
+jiter==0.10.0
+joblib==1.5.1
+keybert==0.7.0
+lxml==6.0.0
+markdown-it-py==4.0.0
+MarkupSafe==3.0.2
+mdurl==0.1.2
+mpmath==1.3.0
+networkx==3.5
+nltk==3.9.1
+numpy==2.3.2
+openai==1.3.0
+packaging==25.0
+pillow==11.3.0
+pycountry==24.6.1
+pydantic==2.11.7
+pydantic_core==2.33.2
+Pygments==2.19.2
+PyPDF2==3.0.1
+pyphen==0.17.2
+python-dateutil==2.9.0.post0
+python-docx==1.0.1
+python-dotenv==1.0.0
+python-multipart==0.0.6
+pytz==2025.2
+PyYAML==6.0.2
+regex==2025.7.34
+requests==2.32.5
+rich==14.1.0
+safetensors==0.6.2
+scikit-learn==1.7.1
+scipy==1.16.1
+sentence-transformers==2.2.2
+sentencepiece==0.2.1
+setuptools==80.9.0
+six==1.17.0
+sniffio==1.3.1
+soupsieve==2.7
+starlette==0.27.0
+sumy==0.11.0
+sympy==1.14.0
+textblob==0.19.0
+textstat==0.7.3
+threadpoolctl==3.6.0
+tokenizers==0.21.4
+torch==2.8.0
+torchvision==0.23.0
+tqdm==4.67.1
+transformers==4.55.4
+typing-inspection==0.4.1
+typing_extensions==4.14.1
+tzlocal==5.3.1
+urllib3==2.5.0
+uvicorn==0.24.0

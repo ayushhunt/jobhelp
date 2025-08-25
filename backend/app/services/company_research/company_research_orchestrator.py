@@ -18,6 +18,7 @@ from .research_sources.web_search_service import WebSearchService
 from .research_sources.knowledge_graph_service import KnowledgeGraphService
 from .research_sources.ai_analysis_service import AIAnalysisService
 from .research_sources.location_verification_service import LocationVerificationService
+from .research_sources.portfolio_research_service import PortfolioResearchService
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,15 @@ class CompanyResearchOrchestrator:
             ResearchSource.WEB_SEARCH: WebSearchService(),
             ResearchSource.KNOWLEDGE_GRAPH: KnowledgeGraphService(),
             ResearchSource.AI_ANALYSIS: AIAnalysisService(),
-            ResearchSource.LOCATION_VERIFICATION: LocationVerificationService()
+            ResearchSource.LOCATION_VERIFICATION: LocationVerificationService(),
+            ResearchSource.PORTFOLIO_RESEARCH: PortfolioResearchService()
         }
         
         # Research pipeline configuration
         self.pipeline_config = {
             "basic": [ResearchSource.LOCATION_VERIFICATION],
-            "standard": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.LOCATION_VERIFICATION],
-            "comprehensive": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.LOCATION_VERIFICATION, ResearchSource.AI_ANALYSIS]
+            "standard": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.LOCATION_VERIFICATION, ResearchSource.PORTFOLIO_RESEARCH],
+            "comprehensive": [ResearchSource.WHOIS, ResearchSource.WEB_SEARCH, ResearchSource.KNOWLEDGE_GRAPH, ResearchSource.LOCATION_VERIFICATION, ResearchSource.PORTFOLIO_RESEARCH, ResearchSource.AI_ANALYSIS]
         }
         
         # Active research sessions

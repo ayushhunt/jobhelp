@@ -147,6 +147,39 @@ export interface CompanyGrowth {
   acquisition_history?: Record<string, any>[];
 }
 
+export interface PortfolioPageData {
+  url: string;
+  title: string;
+  text: string;
+  scraped_at: string;
+}
+
+export interface PortfolioSummary {
+  summary: string;
+  method: string;
+  model_used?: string;
+  key_phrases?: string[];
+  entities?: Record<string, string[]>;
+  techniques_used?: string[];
+  error?: string;
+  generated_at: string;
+}
+
+export interface PortfolioData {
+  domain: string;
+  pages: PortfolioPageData[];
+  raw_text: string;
+  portfolio_urls: string[];
+  technologies: string[];
+  industries: string[];
+  projects: string[];
+  scraped_at: string;
+  total_pages_scraped: number;
+  total_content_length: number;
+  llm_summary: PortfolioSummary;
+  nlp_summary: PortfolioSummary;
+}
+
 export interface CompanyResearchResponse {
   request_id: string;
   company_name: string;
@@ -164,6 +197,7 @@ export interface CompanyResearchResponse {
   company_authenticity?: CompanyAuthenticity;
   company_growth?: CompanyGrowth;
   employee_insights?: any;
+  portfolio_data?: PortfolioData;
   
   // AI-generated summary
   executive_summary?: string;

@@ -13,6 +13,7 @@ class ResearchSource(str, Enum):
     KNOWLEDGE_GRAPH = "knowledge_graph"
     AI_ANALYSIS = "ai_analysis"
     LOCATION_VERIFICATION = "location_verification"
+    PORTFOLIO_RESEARCH = "portfolio_research"
 
 class ResearchStatus(str, Enum):
     """Research task status"""
@@ -98,6 +99,39 @@ class CompanyGrowth(BaseModel):
     """Company growth indicators"""
     employee_growth_trend: Optional[str] = None
     funding_rounds: Optional[List[Dict[str, Any]]] = None
+
+class PortfolioPageData(BaseModel):
+    """Data from a single portfolio page"""
+    url: str
+    title: str
+    text: str
+    scraped_at: datetime
+
+class PortfolioSummary(BaseModel):
+    """Portfolio summary data"""
+    summary: str
+    method: str  # "llm" or "nlp"
+    model_used: Optional[str] = None
+    key_phrases: Optional[List[str]] = None
+    entities: Optional[Dict[str, List[str]]] = None
+    techniques_used: Optional[List[str]] = None
+    error: Optional[str] = None
+    generated_at: datetime
+
+class PortfolioData(BaseModel):
+    """Complete portfolio research data"""
+    domain: str
+    pages: List[PortfolioPageData]
+    raw_text: str
+    portfolio_urls: List[str]
+    technologies: List[str]
+    industries: List[str]
+    projects: List[str]
+    scraped_at: datetime
+    total_pages_scraped: int
+    total_content_length: int
+    llm_summary: PortfolioSummary
+    nlp_summary: PortfolioSummary
     acquisition_history: Optional[List[Dict[str, Any]]] = None
     expansion_news: Optional[List[str]] = None
     market_position: Optional[str] = None
@@ -182,6 +216,7 @@ class CompanyResearchResponse(BaseModel):
     company_authenticity: Optional[CompanyAuthenticity] = None
     company_growth: Optional[CompanyGrowth] = None
     employee_insights: Optional[EmployeeInsights] = None
+    portfolio_data: Optional[PortfolioData] = None
     
     # AI-generated summary
     executive_summary: str

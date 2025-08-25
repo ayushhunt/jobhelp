@@ -1,11 +1,97 @@
 import React from 'react';
 import { CompanyResearchResponse } from '@/services/companyResearchApi';
+import PortfolioResearch from './PortfolioResearch';
 
 interface ResearchResultsProps {
   results: CompanyResearchResponse;
 }
 
 const ResearchResults: React.FC<ResearchResultsProps> = ({ results }) => {
+  // Helper function to safely get portfolio data
+  const getPortfolioData = () => {
+    let portfolioData = results.portfolio_data;
+    
+    if (!portfolioData && results.task_results) {
+      const portfolioTask = results.task_results.find(
+        (task: any) => task.source === 'portfolio_research' && task.status === 'completed'
+      );
+      
+      // Development mode logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Portfolio Research Task Found:', portfolioTask);
+        if (portfolioTask) {
+          console.log('📊 Portfolio Task Data:', portfolioTask.data);
+        }
+      }
+      
+      if (portfolioTask && portfolioTask.data) {
+        // Check if data has portfolio_data structure (backend returns summaries at top level)
+        if (portfolioTask.data.portfolio_data) {
+          // Backend returns: { portfolio_data: {...}, llm_summary: {...}, nlp_summary: {...} }
+          portfolioData = {
+            ...portfolioTask.data.portfolio_data,
+            llm_summary: portfolioTask.data.llm_summary || null,
+            nlp_summary: portfolioTask.data.nlp_summary || null
+          };
+        } else if (portfolioTask.data.domain || portfolioTask.data.pages || portfolioTask.data.llm_summary || portfolioTask.data.nlp_summary) {
+          // If no portfolio_data, check if the data itself contains portfolio information
+          // This handles cases where the backend returns the data directly
+          portfolioData = portfolioTask.data;
+        } else if (portfolioTask.data.summary || portfolioTask.data.key_phrases || portfolioTask.data.entities) {
+          // Handle case where the data contains summary information directly
+          // This might happen if the backend structure is different
+          
+          // Check if this looks like NLP summary data
+          const isNLPSummary = portfolioTask.data.method === 'nlp' || 
+                              (portfolioTask.data.key_phrases && portfolioTask.data.entities);
+          
+          // Check if this looks like LLM summary data  
+          const isLLMSummary = portfolioTask.data.method === 'llm' || 
+                              (portfolioTask.data.summary && !portfolioTask.data.key_phrases);
+          
+          portfolioData = {
+            domain: portfolioTask.data.domain || 'unknown',
+            pages: portfolioTask.data.pages || [],
+            raw_text: portfolioTask.data.raw_text || '',
+            portfolio_urls: portfolioTask.data.portfolio_urls || [],
+            technologies: portfolioTask.data.technologies || [],
+            industries: portfolioTask.data.industries || [],
+            projects: portfolioTask.data.projects || [],
+            scraped_at: portfolioTask.data.scraped_at || new Date().toISOString(),
+            total_pages_scraped: portfolioTask.data.total_pages_scraped || 0,
+            total_content_length: portfolioTask.data.total_content_length || 0,
+            llm_summary: isLLMSummary ? portfolioTask.data : null,
+            nlp_summary: isNLPSummary ? portfolioTask.data : null
+          };
+        }
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Portfolio Data Extracted:', portfolioData);
+          if (portfolioData) {
+            console.log('🔍 Portfolio Data Structure:', {
+              hasDomain: !!portfolioData.domain,
+              hasPages: !!portfolioData.pages,
+              hasLLMSummary: !!portfolioData.llm_summary,
+              hasNLPSummary: !!portfolioData.nlp_summary,
+              llmSummaryType: typeof portfolioData.llm_summary,
+              nlpSummaryType: typeof portfolioData.nlp_summary
+            });
+            
+            // Additional debugging for summary data
+            if (portfolioData.llm_summary) {
+              console.log('🤖 LLM Summary Data:', portfolioData.llm_summary);
+            }
+            if (portfolioData.nlp_summary) {
+              console.log('📊 NLP Summary Data:', portfolioData.nlp_summary);
+            }
+          }
+        }
+      }
+    }
+    
+    return portfolioData;
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     try {
@@ -47,6 +133,17 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results }) => {
 
   return (
     <div className="space-y-6">
+      {/* Development Mode Indicator */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-600">🔧</span>
+            <span className="text-sm font-medium text-blue-800">Development Mode Active</span>
+            <span className="text-xs text-blue-600">Enhanced debugging and data display enabled</span>
+          </div>
+        </div>
+      )}
+
       {/* Company Overview */}
       <div className="bg-card border border-border rounded-lg p-6">
         <div className="flex items-start justify-between mb-4">
@@ -320,6 +417,61 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results }) => {
         </div>
       )}
 
+      {/* Portfolio Research Summary */}
+      {(() => {
+        const portfolioData = getPortfolioData();
+        
+        if (portfolioData) {
+          return (
+            <div className="space-y-4">
+              {/* Portfolio Research Component */}
+              <PortfolioResearch portfolioData={portfolioData} />
+              
+              {/* Quick Portfolio Insights */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-green-800 mb-3 flex items-center gap-2">
+                  🎯 Quick Portfolio Insights
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div>
+                    <span className="text-green-700 font-medium">Pages Analyzed:</span>
+                    <p className="text-green-800">{portfolioData.total_pages_scraped || 0}</p>
+                  </div>
+                  <div>
+                    <span className="text-green-700 font-medium">Technologies Found:</span>
+                    <p className="text-green-800">{portfolioData.technologies?.length || 0}</p>
+                  </div>
+                  <div>
+                    <span className="text-green-700 font-medium">Content Length:</span>
+                    <p className="text-green-800">
+                      {portfolioData.total_content_length ? portfolioData.total_content_length.toLocaleString() : '0'} chars
+                    </p>
+                  </div>
+                </div>
+                
+                {/* LLM Summary Preview */}
+                {portfolioData.llm_summary && !portfolioData.llm_summary.error && portfolioData.llm_summary.summary && (
+                  <div className="mt-4">
+                    <h5 className="font-medium text-green-800 mb-2">🤖 AI Summary Preview</h5>
+                    <div className="p-3 bg-green-100 rounded text-sm text-green-800">
+                      <p className="line-clamp-3">
+                        {portfolioData.llm_summary.summary.substring(0, 300)}
+                        {portfolioData.llm_summary.summary.length > 300 && '...'}
+                      </p>
+                      <div className="mt-2 text-xs text-green-600">
+                        Generated using {portfolioData.llm_summary.provider || portfolioData.llm_summary.model_used || 'AI model'}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+        
+        return null;
+      })()}
+
       {/* Web Search Results */}
       {results.web_search_results && results.web_search_results.length > 0 && (
         <div className="bg-card border border-border rounded-lg p-6">
@@ -404,6 +556,48 @@ const ResearchResults: React.FC<ResearchResultsProps> = ({ results }) => {
           )}
         </div>
       </div>
+
+      {/* Development Mode: Task Results Debug */}
+      {process.env.NODE_ENV === 'development' && results.task_results && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <h4 className="text-lg font-semibold text-yellow-800 mb-3">🔧 Development Mode: Task Results Debug</h4>
+          <div className="space-y-3">
+            {results.task_results.map((task: any, index: number) => (
+              <div key={index} className="border border-yellow-200 rounded p-3 bg-white">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-medium text-yellow-800">{task.source}</span>
+                  <span className={`px-2 py-1 text-xs rounded ${
+                    task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    task.status === 'failed' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {task.status}
+                  </span>
+                </div>
+                <div className="text-xs text-yellow-700">
+                  <p>Processing Time: {task.processing_time?.toFixed(3)}s</p>
+                  <p>Cost Estimate: ${task.cost_estimate || 0}</p>
+                  {task.error_message && (
+                    <p className="text-red-600">Error: {task.error_message}</p>
+                  )}
+                </div>
+                {task.source === 'portfolio_research' && task.data && (
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-sm text-yellow-700 hover:text-yellow-800">
+                      Portfolio Data Preview
+                    </summary>
+                    <div className="mt-2 p-2 bg-yellow-100 rounded text-xs">
+                      <pre className="whitespace-pre-wrap overflow-auto max-h-32">
+                        {JSON.stringify(task.data, null, 2)}
+                      </pre>
+                    </div>
+                  </details>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

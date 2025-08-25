@@ -136,19 +136,18 @@ class WebSearchService(BaseResearchSource):
     
     async def _search_parallel_ai(self, query: str) -> List[WebSearchResult]:
         """Search using Parallel AI"""
-        url = "https://api.parallel.ai/v1/search"
+        url = "https://api.parallel.ai/v1beta/search"
         headers = {
-            "Authorization": f"Bearer {self.parallel_api_key}",
+            "x-api-key": self.parallel_api_key,
             "Content-Type": "application/json"
         }
         
         payload = {
-            "query": query,
+            "objective": query,
+            "search_queries": [query],  # Use the main query as the primary search
+            "processor": "base",
             "max_results": 10,
-            "search_type": "web",
-            "include_domains": [],
-            "exclude_domains": [],
-            "time_period": "any"
+            "max_chars_per_result": 6000
         }
         
         async with aiohttp.ClientSession() as session:
@@ -190,20 +189,25 @@ class WebSearchService(BaseResearchSource):
         results = []
         
         try:
+            # New API structure: data.results array
             search_results = data.get("results", [])
             for item in search_results:
+                # Extract content and metadata from the new structure
+                content = item.get("content", {})
+                
                 result = WebSearchResult(
-                    title=item.get("title", ""),
-                    url=item.get("url", ""),
-                    snippet=item.get("snippet", ""),
-                    source=item.get("source", "web"),
-                    published_date=self._parse_date(item.get("published_date")),
-                    relevance_score=item.get("relevance_score"),
-                    content_type=item.get("content_type", "web_page")
+                    title=content.get("title", item.get("title", "")),
+                    url=content.get("url", item.get("url", "")),
+                    snippet=content.get("text", content.get("snippet", item.get("snippet", ""))),
+                    source="parallel_ai",
+                    published_date=self._parse_date(content.get("published_date")),
+                    relevance_score=item.get("relevance_score", 0.0),
+                    content_type="web_page"
                 )
                 results.append(result)
         except Exception as e:
             logger.error(f"Error parsing Parallel AI response: {str(e)}")
+            logger.debug(f"Raw response data: {data}")
         
         return results
     
