@@ -18,7 +18,7 @@ class EmailService:
     def send_verification_email(self, email: str, full_name: str, verification_token: str) -> bool:
         """Send email verification email"""
         try:
-            verification_url = f"{settings.FRONTEND_URL}/auth/verify-email?token={verification_token}"
+            verification_url = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
             
             params: resend.Emails.SendParams = {
                 "from": settings.EMAIL_FROM,
@@ -37,7 +37,7 @@ class EmailService:
     def send_password_reset_email(self, email: str, full_name: str, reset_token: str) -> bool:
         """Send password reset email"""
         try:
-            reset_url = f"{settings.FRONTEND_URL}/auth/reset-password?token={reset_token}"
+            reset_url = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
             
             params: resend.Emails.SendParams = {
                 "from": settings.EMAIL_FROM,

@@ -4,7 +4,7 @@ Handles user registration, login, logout, and token management
 """
 from datetime import timedelta
 from typing import Any, Dict
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Cookie
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Cookie, Query
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -199,7 +199,7 @@ async def reset_password(
 
 @router.post("/verify-email")
 async def verify_email(
-    token: str,
+    token: str = Query(..., description="Email verification token"),
     db: Session = Depends(get_db)
 ):
     """Verify email with token"""
