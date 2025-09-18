@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     # API Configuration
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "JobHelp AI API"
-    VERSION: str = "3.0.0"
-    DESCRIPTION: str = "AI-powered resume and job description analysis"
+    VERSION: str = "1.0.0"
+    DESCRIPTION: str = "jobhelp"
     
     # Server Configuration
     HOST: str = "0.0.0.0"
@@ -28,6 +28,22 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://192.168.1.7:3000"
     ]
+    
+    # Database Configuration
+    DATABASE_URL: Optional[str] = None
+    DATABASE_HOST: str = "localhost"
+    DATABASE_PORT: int = 5432
+    DATABASE_NAME: str = "jobhelp"
+    DATABASE_USER: str = "postgres"
+    DATABASE_PASSWORD: str = ""
+    
+    # Redis Configuration
+    REDIS_URL: Optional[str] = None
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: Optional[str] = None
+    REDIS_DB: int = 0
+    REDIS_SSL: bool = True  # Upstash uses SSL
     
     # LLM Configuration
     OPENAI_API_KEY: Optional[str] = None
@@ -45,6 +61,12 @@ class Settings(BaseSettings):
     # LLM Provider Selection
     DEFAULT_LLM_PROVIDER: str = "gemini"  # gemini, openai, anthropic, groq
     FALLBACK_LLM_PROVIDER: str = "openai"
+    
+    # Google API Configuration
+    GOOGLE_KNOWLEDGE_GRAPH_API_KEY: Optional[str] = None
+    GOOGLE_SEARCH_API_KEY: Optional[str] = None
+    GOOGLE_SEARCH_ENGINE_ID: Optional[str] = None
+    GOOGLE_PLACES_API_KEY: Optional[str] = None
     
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
@@ -64,6 +86,52 @@ class Settings(BaseSettings):
     # AI Usage Limits
     FREE_TIER_DAILY_LIMIT: int = 10
     PREMIUM_TIER_DAILY_LIMIT: int = 100
+    
+    # JWT Configuration
+    JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    
+    # OAuth Configuration
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
+    
+    # Frontend URLs
+    FRONTEND_URL: str = "http://localhost:3000"
+    AUTH_REDIRECT_URL: str = "http://localhost:3000/auth/callback"
+    
+    # Email Configuration - Resend API
+    RESEND_API_KEY: Optional[str] = None
+    EMAIL_FROM: str = "noreply@jobhelp.ai"
+    
+    # Legacy SMTP Configuration (kept for compatibility)
+    # SMTP_HOST: Optional[str] = None
+    # SMTP_PORT: int = 587
+    # SMTP_USERNAME: Optional[str] = None
+    # SMTP_PASSWORD: Optional[str] = None
+    # SMTP_USE_TLS: bool = True
+    
+    @property
+    def get_database_url(self) -> str:
+        """Get database URL from environment or construct from components"""
+        if self.DATABASE_URL:
+            return self.DATABASE_URL
+        
+        return f"postgresql://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
+    
+    @property
+    def get_redis_url(self) -> str:
+        """Get Redis URL from environment or construct from components"""
+        if self.REDIS_URL:
+            return self.REDIS_URL
+        
+        # Construct Redis URL with SSL for Upstash
+        protocol = "rediss://" if self.REDIS_SSL else "redis://"
+        auth = f":{self.REDIS_PASSWORD}@" if self.REDIS_PASSWORD else ""
+        return f"{protocol}{auth}{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
     
     class Config:
         env_file = ".env"
