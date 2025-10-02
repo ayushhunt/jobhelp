@@ -1,0 +1,13 @@
+{
+    "Servers": {
+        "1": {
+            "Name": "AivenJobHunt",
+            "Group": "GROUP_TEST",
+            "Host": "pg-264853de-jobhunt.i.aivencloud.com",
+            "Port": 14366,
+            "MaintenanceDB": "defaultdb",
+            "Username": "avnadmin",
+            "SSLMode": "require"
+        }
+    }
+}

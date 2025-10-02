@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, BarChart2, Settings, Menu, X } from 'lucide-react'
+import { FileText, BarChart2, Settings, Menu, X, Search } from 'lucide-react'
 import Link from 'next/link'
 import ThemeToggle from './ThemeToggle'
 
@@ -14,6 +14,7 @@ export default function Layout({ children }: LayoutProps) {
 
   const menuItems = [
     { name: 'Resume Analytics', icon: <FileText className="w-4 h-4" />, path: '/' },
+    { name: 'Company Research', icon: <Search className="w-4 h-4" />, path: '/company-research' },
     { name: 'Coming Soon', icon: <BarChart2 className="w-4 h-4" />, path: '/coming-soon' },
     { name: 'Settings', icon: <Settings className="w-4 h-4" />, path: '/settings' },
   ]

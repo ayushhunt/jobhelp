@@ -8,6 +8,7 @@ const API_VERSION = '/api/v1';
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${API_BASE_URL}${API_VERSION}`,
   timeout: 30000, // 30 seconds
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },

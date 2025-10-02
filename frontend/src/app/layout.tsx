@@ -2,12 +2,13 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { ReduxProvider } from '@/components/ReduxProvider'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'JobHelp - Resume Analytics',
-  description: 'Compare your resume with job descriptions using AI',
+  title: 'JobHelp - Hire Smarter. Get Hired Faster.',
+  description: 'Revolutionary AI-powered platform that connects top talent with amazing opportunities. Experience the future of recruitment.',
 }
 
 export default function RootLayout({
@@ -36,10 +37,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.className} antialiased`}>
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+      <body className={`${inter.className} antialiased`} suppressHydrationWarning>
+        <ReduxProvider>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </ReduxProvider>
       </body>
     </html>
   )
