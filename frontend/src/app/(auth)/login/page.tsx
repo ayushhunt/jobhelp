@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AuthLayout from '@/components/auth/AuthLayout'
 import { InputField, PasswordField, SubmitButton, SocialButton } from '@/components/auth/FormComponents'
-import AuthService, { LoginRequest, ApiError } from '@/services/auth'
+import AuthService, { LoginRequest, ApiError, getDashboardPath } from '@/services/auth'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -59,8 +59,9 @@ export default function LoginPage() {
 
       const response = await AuthService.login(loginData)
       
-      // Redirect to dashboard or home page after successful login
-      router.push('/dashboard')
+      // Redirect to role-specific dashboard after successful login
+      const dashboardPath = getDashboardPath(response.user.role)
+      router.push(dashboardPath)
 
     } catch (error) {
       const apiError = error as ApiError

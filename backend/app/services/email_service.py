@@ -171,7 +171,7 @@ class EmailService:
                     </ul>
                     
                     <div style="text-align: center; margin: 30px 0;">
-                        <a href="{settings.FRONTEND_URL}/dashboard" 
+                        <a href="{settings.FRONTEND_URL}/" 
                            style="background-color: #28a745; color: white; padding: 12px 30px; 
                                   text-decoration: none; border-radius: 5px; display: inline-block;">
                             Get Started

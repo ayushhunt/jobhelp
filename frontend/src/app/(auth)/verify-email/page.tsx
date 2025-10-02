@@ -127,14 +127,14 @@ export default function VerifyEmailPage() {
 
           {/* Sign In Button */}
           <div className="space-y-3">
-            <Link href="/auth/login">
+            <Link href="/login">
               <SubmitButton type="button">
                 Sign In to Your Account
               </SubmitButton>
             </Link>
             
             <Link 
-              href="/dashboard" 
+              href="#" 
               className="block text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
             >
               Or go to Dashboard
@@ -208,7 +208,7 @@ export default function VerifyEmailPage() {
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <p>Already verified?</p>
             <Link 
-              href="/auth/login" 
+              href="/login" 
               className="text-black dark:text-white hover:underline font-medium"
             >
               Sign in to your account

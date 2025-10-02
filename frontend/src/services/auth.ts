@@ -1,16 +1,16 @@
-import { apiClient } from './api';
+import { apiClient } from '@/lib/api';
 
-// Auth request/response types
+// Simplified interfaces for auth
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
 export interface RegisterRequest {
   email: string;
   password: string;
   full_name: string;
-  role: 'admin' | 'applicant' | 'recruiter';
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
+  role: 'applicant' | 'recruiter';
 }
 
 export interface ForgotPasswordRequest {
@@ -26,10 +26,10 @@ export interface User {
   id: number;
   email: string;
   full_name: string;
-  role: 'admin' | 'applicant' | 'recruiter';
-  auth_provider: 'local' | 'google' | 'github';
+  role: 'applicant' | 'recruiter';
   is_active: boolean;
   is_verified: boolean;
+  is_premium?: boolean;
   created_at: string;
   last_login?: string;
 }
@@ -41,16 +41,28 @@ export interface AuthResponse {
 
 export interface ApiError {
   detail: string;
-  status?: number;
+  status: number;
 }
+
+// Dashboard paths based on user roles
+export const DASHBOARD_PATHS = {
+  applicant: '/candidate/dashboard',
+  recruiter: '/recruiter/dashboard',
+  admin: '/admin/dashboard'
+} as const;
+
+// Utility function to get dashboard path based on role
+export const getDashboardPath = (role: string): string => {
+  return DASHBOARD_PATHS[role as keyof typeof DASHBOARD_PATHS] || '/';
+};
 
 // Auth service class
 export class AuthService {
   // Register new user
   static async register(data: RegisterRequest): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post('/auth/register', data);
-      return response.data;
+      const response = await apiClient.post<AuthResponse>('/auth/register', data);
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -59,8 +71,8 @@ export class AuthService {
   // Login user
   static async login(data: LoginRequest): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post('/auth/login', data);
-      return response.data;
+      const response = await apiClient.post<AuthResponse>('/auth/login', data);
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -69,18 +81,18 @@ export class AuthService {
   // Logout user
   static async logout(): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post('/auth/logout');
-      return response.data;
+      const response = await apiClient.post<{ message: string }>('/auth/logout');
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
   }
 
-  // Get current user
+  // Get current user profile
   static async getCurrentUser(): Promise<User> {
     try {
-      const response = await apiClient.get('/auth/me');
-      return response.data;
+      const response = await apiClient.get<User>('/auth/me');
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -89,8 +101,8 @@ export class AuthService {
   // Forgot password
   static async forgotPassword(data: ForgotPasswordRequest): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post('/auth/forgot-password', data);
-      return response.data;
+      const response = await apiClient.post<{ message: string }>('/auth/forgot-password', data);
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -99,8 +111,8 @@ export class AuthService {
   // Reset password
   static async resetPassword(data: ResetPasswordRequest): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post('/auth/reset-password', data);
-      return response.data;
+      const response = await apiClient.post<{ message: string }>('/auth/reset-password', data);
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -109,8 +121,8 @@ export class AuthService {
   // Verify email
   static async verifyEmail(token: string): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post(`/auth/verify-email?token=${encodeURIComponent(token)}`);
-      return response.data;
+      const response = await apiClient.post<{ message: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -119,8 +131,8 @@ export class AuthService {
   // Resend verification email
   static async resendVerification(): Promise<{ message: string }> {
     try {
-      const response = await apiClient.post('/auth/resend-verification');
-      return response.data;
+      const response = await apiClient.post<{ message: string }>('/auth/resend-verification');
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -129,8 +141,8 @@ export class AuthService {
   // Refresh token
   static async refreshToken(): Promise<any> {
     try {
-      const response = await apiClient.post('/auth/refresh');
-      return response.data;
+      const response = await apiClient.post<any>('/auth/refresh');
+      return response;
     } catch (error: any) {
       throw this.handleAuthError(error);
     }
@@ -223,5 +235,43 @@ export class AuthService {
     return fullName.trim().length >= 2;
   }
 }
+
+// Modern simplified auth service
+export const authService = {
+  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
+    return await apiClient.post<AuthResponse>('/auth/login', credentials);
+  },
+
+  register: async (userData: RegisterRequest): Promise<AuthResponse> => {
+    return await apiClient.post<AuthResponse>('/auth/register', userData);
+  },
+
+  logout: async (): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>('/auth/logout');
+  },
+
+  getCurrentUser: async (): Promise<User> => {
+    return await apiClient.get<User>('/auth/me');
+  },
+
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>('/auth/forgot-password', { email });
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>('/auth/reset-password', { 
+      token, 
+      new_password: newPassword 
+    });
+  },
+
+  verifyEmail: async (token: string): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>(`/auth/verify-email?token=${encodeURIComponent(token)}`);
+  },
+
+  resendVerification: async (): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>('/auth/resend-verification');
+  },
+};
 
 export default AuthService;
