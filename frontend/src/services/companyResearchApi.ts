@@ -1,41 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
-
-// API configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-const API_VERSION = '/api/v1';
-
-// Create axios instance for company research
-const companyResearchClient: AxiosInstance = axios.create({
-  baseURL: `${API_BASE_URL}${API_VERSION}/company-research`,
-  timeout: 60000, // 60 seconds for research operations
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor
-companyResearchClient.interceptors.request.use(
-  (config) => {
-    console.log(`🔍 Company Research Request: ${config.method?.toUpperCase()} ${config.url}`);
-    return config;
-  },
-  (error) => {
-    console.error('❌ Company Research Request Error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor
-companyResearchClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    console.log(`✅ Company Research Response: ${response.status} ${response.config.url}`);
-    return response;
-  },
-  (error) => {
-    console.error('❌ Company Research Response Error:', error.response?.data || error.message);
-    return Promise.reject(error);
-  }
-);
+import { apiClient } from '@/lib/api';
 
 // Types for Company Research
 export interface CompanyResearchRequest {
@@ -273,38 +236,33 @@ export interface QuickCheckResult {
 export class CompanyResearchAPIService {
   // Perform comprehensive company research
   static async researchCompany(request: CompanyResearchRequest): Promise<CompanyResearchResponse> {
-    const response = await companyResearchClient.post('/research', request);
-    return response.data;
+    // Using shared api client base: /api/v1
+    return await apiClient.post<CompanyResearchResponse>('/company-research/research', request);
   }
 
   // Initiate asynchronous research
   static async researchCompanyAsync(request: CompanyResearchRequest): Promise<{ request_id: string; status: string; message: string }> {
-    const response = await companyResearchClient.post('/research/async', request);
-    return response.data;
+    return await apiClient.post<{ request_id: string; status: string; message: string }>('/company-research/research/async', request);
   }
 
   // Get research progress
   static async getResearchProgress(requestId: string): Promise<ResearchProgress> {
-    const response = await companyResearchClient.get(`/research/progress/${requestId}`);
-    return response.data;
+    return await apiClient.get<ResearchProgress>(`/company-research/research/progress/${requestId}`);
   }
 
   // Cancel research
   static async cancelResearch(requestId: string): Promise<{ message: string; request_id: string }> {
-    const response = await companyResearchClient.delete(`/research/cancel/${requestId}`);
-    return response.data;
+    return await apiClient.delete<{ message: string; request_id: string }>(`/company-research/research/cancel/${requestId}`);
   }
 
   // Get cost estimate
   static async getCostEstimate(researchDepth: string = 'standard'): Promise<ResearchCostEstimate> {
-    const response = await companyResearchClient.get(`/research/cost-estimate?research_depth=${researchDepth}`);
-    return response.data;
+    return await apiClient.get<ResearchCostEstimate>(`/company-research/research/cost-estimate?research_depth=${researchDepth}`);
   }
 
   // Get service health
   static async getServiceHealth(): Promise<ServiceHealth> {
-    const response = await companyResearchClient.get('/research/health');
-    return response.data;
+    return await apiClient.get<ServiceHealth>('/company-research/research/health');
   }
 
   // Test all services
@@ -313,14 +271,14 @@ export class CompanyResearchAPIService {
     test_results: Record<string, boolean>;
     timestamp: string;
   }> {
-    const response = await companyResearchClient.post('/research/test-services');
-    return response.data;
+    return await apiClient.post<{ overall_status: string; test_results: Record<string, boolean>; timestamp: string }>(
+      '/company-research/research/test-services'
+    );
   }
 
   // Get research sources info
   static async getResearchSources(): Promise<ResearchSourceInfo> {
-    const response = await companyResearchClient.get('/research/sources');
-    return response.data;
+    return await apiClient.get<ResearchSourceInfo>('/company-research/research/sources');
   }
 
   // Quick company check
@@ -331,19 +289,32 @@ export class CompanyResearchAPIService {
     const params = new URLSearchParams();
     if (companyName) params.append('company_name', companyName);
     if (companyDomain) params.append('company_domain', companyDomain);
-    
-    const response = await companyResearchClient.get(`/research/quick-check?${params.toString()}`);
-    return response.data;
+    return await apiClient.get<QuickCheckResult>(`/company-research/research/quick-check?${params.toString()}`);
   }
 
-  // Stream research progress (Server-Sent Events)
-  static createProgressStream(requestId: string): EventSource {
-    return new EventSource(`${API_BASE_URL}${API_VERSION}/company-research/research/stream/${requestId}`);
+  // Test cache functionality
+  static async testCacheFunctionality(): Promise<{
+    cache_tests: {
+      set: string;
+      get: string;
+      delete: string;
+      retrieved_value: any;
+    };
+    redis_health: any;
+    cache_connected: boolean;
+  }> {
+    return await apiClient.get<{
+      cache_tests: {
+        set: string;
+        get: string;
+        delete: string;
+        retrieved_value: any;
+      };
+      redis_health: any;
+      cache_connected: boolean;
+    }>('/company-research/research/cache/test');
   }
 }
-
-// Export the client for direct use if needed
-export { companyResearchClient };
 
 // Export default instance
 export default CompanyResearchAPIService;

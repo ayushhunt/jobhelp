@@ -5,8 +5,10 @@ Provides endpoints for company research functionality
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
 from fastapi.responses import StreamingResponse
 import logging
+import time
 from typing import Optional, Dict, Any
 import json
+import hashlib
 
 from app.models.schemas.company_research import (
     CompanyResearchRequest, CompanyResearchResponse, ResearchProgress,
@@ -14,6 +16,7 @@ from app.models.schemas.company_research import (
 )
 from app.services.company_research.company_research_orchestrator import CompanyResearchOrchestrator
 from app.config.settings import settings
+from app.core.redis_cache import redis_cache
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -32,17 +35,99 @@ async def research_company(request: CompanyResearchRequest):
     - Google Knowledge Graph entity information
     - AI-powered analysis and insights
     """
+    request_start_time = time.time()
     try:
-        logger.info(f"Starting company research for: {request.company_name or request.company_domain}")
+        logger.info(f"🚀 Starting company research for: {request.company_name or request.company_domain}")
+
+        # Build cache keys - both complex hash-based and simple company name-based
+        try:
+            request_payload = request.dict()
+        except Exception:
+            # Fallback in case of different pydantic version
+            request_payload = json.loads(request.json())
+
+        # Complex cache key for exact request matching
+        normalized_payload = json.dumps(request_payload, sort_keys=True)
+        cache_key_hash = hashlib.sha256(normalized_payload.encode("utf-8")).hexdigest()
+        complex_cache_key = f"company_research:research:{cache_key_hash}"
         
+        # Simple cache key based on company name/domain
+        company_identifier = request.company_name or request.company_domain or "unknown"
+        simple_cache_key = f"company_research:simple:{company_identifier.lower()}"
+        
+        logger.info(f"Generated cache keys - Complex: {complex_cache_key}, Simple: {simple_cache_key}")
+
+        # Try cache first (check both keys)
+        cached = None
+        cache_source = None
+        
+        # First try complex cache key
+        cached = redis_cache.get(complex_cache_key)
+        if cached:
+            cache_source = "complex"
+            logger.info(f"✅ CACHE HIT: Found exact match in complex cache for key: {complex_cache_key}")
+        else:
+            # Try simple cache key
+            cached = redis_cache.get(simple_cache_key)
+            if cached:
+                cache_source = "simple"
+                logger.info(f"✅ CACHE HIT: Found match in simple cache for key: {simple_cache_key}")
+        
+        if cached:
+            cache_response_time = time.time() - request_start_time
+            logger.info(f"⚡ Returning company research from {cache_source} cache (took {cache_response_time:.2f}s)")
+            try:
+                # Parse the cached data back into the response model
+                response = CompanyResearchResponse.model_validate(cached)
+                total_request_time = time.time() - request_start_time
+                logger.info(f"✅ Successfully parsed cached response for: {response.company_name} - Total time: {total_request_time:.2f}s")
+                return response
+            except Exception as e:
+                # If structure changed, ignore cache and proceed
+                logger.warning(f"Cached company research payload could not be parsed; regenerating. Error: {str(e)}")
+
         # Perform research
+        logger.info("No cache hit found, performing fresh research...")
+        start_time = time.time()
         response = await research_orchestrator.research_company(request)
+        research_time = time.time() - start_time
+        logger.info(f"Research completed in {research_time:.2f} seconds for: {response.company_name}")
+
+        # Store in cache (serialize to dict for safe JSON storage)
+        try:
+            # Use mode='json' to ensure datetime objects are properly serialized
+            response_dict = response.model_dump(mode='json')
+        except Exception:
+            try:
+                # Fallback for older pydantic versions
+                response_dict = response.dict()
+            except Exception:
+                # Final fallback - serialize to JSON string then parse back
+                response_json = response.json()
+                response_dict = json.loads(response_json)
         
-        logger.info(f"Company research completed for: {response.company_name}")
+        # Store in both cache keys
+        cache_expire = 3600  # 1 hour
+        complex_set_success = redis_cache.set(complex_cache_key, response_dict, expire=cache_expire)
+        simple_set_success = redis_cache.set(simple_cache_key, response_dict, expire=cache_expire)
+        
+        if complex_set_success:
+            logger.info(f"✅ CACHE SET: Successfully stored in complex cache with key: {complex_cache_key} (expires in {cache_expire}s)")
+        else:
+            logger.warning(f"❌ CACHE SET FAILED: Failed to store in complex cache with key: {complex_cache_key}")
+            
+        if simple_set_success:
+            logger.info(f"✅ CACHE SET: Successfully stored in simple cache with key: {simple_cache_key} (expires in {cache_expire}s)")
+        else:
+            logger.warning(f"❌ CACHE SET FAILED: Failed to store in simple cache with key: {simple_cache_key}")
+
+        total_request_time = time.time() - request_start_time
+        logger.info(f"✅ Company research completed for: {response.company_name} - Total time: {total_request_time:.2f}s")
         return response
-        
+
     except Exception as e:
-        logger.error(f"Company research failed: {str(e)}")
+        total_request_time = time.time() - request_start_time
+        logger.error(f"❌ Company research failed after {total_request_time:.2f}s: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Research failed: {str(e)}")
 
 @router.post("/research/async", response_model=Dict[str, str])
@@ -155,6 +240,48 @@ async def get_service_health():
     except Exception as e:
         logger.error(f"Failed to get service health: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get health status: {str(e)}")
+
+@router.get("/research/cache/test")
+async def test_cache_functionality():
+    """
+    Test cache functionality with a simple operation
+    
+    Useful for debugging cache issues
+    """
+    try:
+        test_key = "test_cache_key"
+        test_value = {"test": "data", "timestamp": time.time()}
+        
+        # Test cache set
+        set_success = redis_cache.set(test_key, test_value, expire=60)
+        logger.info(f"Cache SET test: {'SUCCESS' if set_success else 'FAILED'}")
+        
+        # Test cache get
+        retrieved_value = redis_cache.get(test_key)
+        get_success = retrieved_value is not None
+        logger.info(f"Cache GET test: {'SUCCESS' if get_success else 'FAILED'}")
+        
+        # Test cache delete
+        delete_success = redis_cache.delete(test_key)
+        logger.info(f"Cache DELETE test: {'SUCCESS' if delete_success else 'FAILED'}")
+        
+        # Test Redis connection
+        redis_health = redis_cache.test_connection()
+        
+        return {
+            "cache_tests": {
+                "set": "success" if set_success else "failed",
+                "get": "success" if get_success else "failed", 
+                "delete": "success" if delete_success else "failed",
+                "retrieved_value": retrieved_value
+            },
+            "redis_health": redis_health,
+            "cache_connected": redis_cache.connected
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache test failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Cache test failed: {str(e)}")
 
 @router.post("/research/test-services")
 async def test_all_services():

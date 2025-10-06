@@ -10,7 +10,7 @@ class ApiClient {
   constructor(baseURL?: string) {
     this.instance = axios.create({
       baseURL: baseURL || `${API_BASE_URL}${API_VERSION}`,
-      timeout: 30000,
+      timeout: 120000, // Increased to 2 minutes for company research
       withCredentials: true, // This will include cookies in requests
       headers: {
         'Content-Type': 'application/json',

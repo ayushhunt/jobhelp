@@ -5,12 +5,20 @@ Simple and efficient caching with Redis
 import logging
 import json
 from typing import Any, Optional, Union
+from datetime import datetime, date
 from redis import Redis, ConnectionPool
 from redis.exceptions import RedisError
 
 from app.config.settings import settings
 
 logger = logging.getLogger(__name__)
+
+class DateTimeEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle datetime objects"""
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
 
 class RedisCache:
     """Redis caching service"""
@@ -60,32 +68,41 @@ class RedisCache:
     def set(self, key: str, value: Any, expire: int = 3600) -> bool:
         """Set a key-value pair with expiration"""
         if not self.connected:
+            logger.warning(f"Redis not connected - skipping cache set for key: {key}")
             return False
         
         try:
             if isinstance(value, (dict, list)):
-                value = json.dumps(value)
+                # Use custom encoder to handle datetime objects
+                value = json.dumps(value, cls=DateTimeEncoder)
             self.redis.setex(key, expire, value)
+            logger.debug(f"Redis SET successful - Key: {key}, Expire: {expire}s, Value size: {len(str(value))} chars")
             return True
-        except RedisError as e:
-            logger.error(f"Redis set error: {str(e)}")
+        except (RedisError, TypeError) as e:
+            logger.error(f"Redis set error for key {key}: {str(e)}")
             return False
     
     def get(self, key: str) -> Optional[Any]:
         """Get a value by key"""
         if not self.connected:
+            logger.debug(f"Redis not connected - skipping cache get for key: {key}")
             return None
         
         try:
             value = self.redis.get(key)
             if value:
                 try:
-                    return json.loads(value)
+                    parsed_value = json.loads(value)
+                    logger.debug(f"Redis GET successful - Key: {key}, Value size: {len(str(value))} chars")
+                    return parsed_value
                 except json.JSONDecodeError:
+                    logger.debug(f"Redis GET successful (raw string) - Key: {key}, Value size: {len(str(value))} chars")
                     return value
+            else:
+                logger.debug(f"Redis GET miss - Key: {key} not found")
             return None
         except RedisError as e:
-            logger.error(f"Redis get error: {str(e)}")
+            logger.error(f"Redis get error for key {key}: {str(e)}")
             return None
     
     def delete(self, key: str) -> bool:
